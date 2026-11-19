@@ -1,0 +1,48 @@
+seeds:
+  - name: branches
+    description: Reference table containing one row per parapharmacy location.
+    columns: 
+      - name: branch_hash
+        description: The primary key of the table.
+        data_tests:
+          - unique
+          - not_null 
+      - name: branch_name
+        description: Display name of the parapharmacy location.
+        data_tests: 
+          - not_null
+      - name: city
+        description: City in which the parapharmacy location is situated.
+        data_tests:
+          - not_null 
+      - name: region 
+        description: Belgian region of the parapharmacy location.
+        data_tests:
+          - not_null
+
+  - name: product_families
+    description: Reference table defining product families and their inventory handing rules.
+    columns:
+      - name: family_cd
+        description: Primary key and short code identifying the product family.
+        data_tests:
+          - unique
+          - not_null
+      - name: family_name
+        description: Human-readable name of the product family.
+        data_tests:
+          - not_null
+      - name: default_storage_zone
+        description: Default warehouse storage zone for products in this family.
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: ['A', 'C']
+      - name: expected_date_type
+        description: Type of date used to track product shelf life.
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: ['BBE', 'EXP']
