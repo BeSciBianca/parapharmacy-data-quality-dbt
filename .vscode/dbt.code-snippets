@@ -1,0 +1,196 @@
+{
+  // ---------- SQL / Jinja ----------
+  "dbt ref": {
+    "scope": "sql,jinja-sql",
+    "prefix": "__ref",
+    "body": "{{ ref('${1:model_name}') }}$0",
+    "description": "dbt ref() to another model"
+  },
+  "dbt source": {
+    "scope": "sql,jinja-sql",
+    "prefix": "__source",
+    "body": "{{ source('${1:source_name}', '${2:table_name}') }}$0",
+    "description": "dbt source() to a raw table"
+  },
+  "dbt config": {
+    "scope": "sql,jinja-sql",
+    "prefix": "__config",
+    "body": [
+      "{{",
+      "    config(",
+      "        materialized='${1|view,table,incremental,ephemeral|}'$2",
+      "    )",
+      "}}",
+      "$0"
+    ],
+    "description": "dbt config() block with materialization choice"
+  },
+  "dbt config incremental": {
+    "scope": "sql,jinja-sql",
+    "prefix": "__incremental_config",
+    "body": [
+      "{{",
+      "    config(",
+      "        materialized='incremental',",
+      "        unique_key='${1:id}'",
+      "    )",
+      "}}",
+      "$0"
+    ],
+    "description": "dbt config() for an incremental model"
+  },
+  "dbt is_incremental": {
+    "scope": "sql,jinja-sql",
+    "prefix": "__is_incremental",
+    "body": [
+      "{% if is_incremental() %}",
+      "    where ${1:updated_at} > (select max(${1:updated_at}) from {{ this }})",
+      "{% endif %}",
+      "$0"
+    ],
+    "description": "Incremental filter block"
+  },
+  "dbt this": {
+    "scope": "sql,jinja-sql",
+    "prefix": "__this",
+    "body": "{{ this }}$0",
+    "description": "The current model's relation"
+  },
+  "dbt macro": {
+    "scope": "sql,jinja-sql",
+    "prefix": "__macro",
+    "body": [
+      "{% macro ${1:macro_name}(${2:args}) %}",
+      "    $0",
+      "{% endmacro %}"
+    ],
+    "description": "New macro definition"
+  },
+  "dbt test (generic)": {
+    "scope": "sql,jinja-sql",
+    "prefix": "__test",
+    "body": [
+      "{% test ${1:test_name}(model, column_name) %}",
+      "",
+      "select *",
+      "from {{ model }}",
+      "where ${2:{{ column_name \\}\\} is null}",
+      "",
+      "{% endtest %}",
+      "$0"
+    ],
+    "description": "New generic data test"
+  },
+  "dbt var": {
+    "scope": "sql,jinja-sql",
+    "prefix": "__var",
+    "body": "{{ var('${1:var_name}'${2:, '${3:default}'}) }}$0",
+    "description": "dbt var() with optional default"
+  },
+  "dbt env_var": {
+    "scope": "sql,jinja-sql",
+    "prefix": "__env_var",
+    "body": "{{ env_var('${1:ENV_VAR_NAME}'${2:, '${3:default}'}) }}$0",
+    "description": "dbt env_var() with optional default"
+  },
+  "jinja set": {
+    "scope": "sql,jinja-sql",
+    "prefix": "__set",
+    "body": "{% set ${1:name} = ${2:value} %}$0",
+    "description": "Jinja set variable"
+  },
+  "jinja if": {
+    "scope": "sql,jinja-sql",
+    "prefix": "__if",
+    "body": [
+      "{% if ${1:condition} %}",
+      "    $0",
+      "{% endif %}"
+    ],
+    "description": "Jinja if block"
+  },
+  "jinja for": {
+    "scope": "sql,jinja-sql",
+    "prefix": "__for",
+    "body": [
+      "{% for ${1:item} in ${2:items} %}",
+      "    $0{% if not loop.last %},{% endif %}",
+      "{% endfor %}"
+    ],
+    "description": "Jinja for loop (with trailing-comma guard)"
+  },
+  "jinja comment": {
+    "scope": "sql,jinja-sql",
+    "prefix": "__comment",
+    "body": "{# ${1:comment} #}$0",
+    "description": "Jinja comment (not sent to the warehouse)"
+  },
+  "dbt log": {
+    "scope": "sql,jinja-sql",
+    "prefix": "__log",
+    "body": "{{ log(${1:'message'}, info=${2|true,false|}) }}$0",
+    "description": "dbt log() to the console"
+  },
+  "dbt staging model": {
+    "scope": "sql,jinja-sql",
+    "prefix": "__stg",
+    "body": [
+      "with source as (",
+      "",
+      "    select * from {{ source('${1:source_name}', '${2:table_name}') }}",
+      "",
+      "),",
+      "",
+      "renamed as (",
+      "",
+      "    select",
+      "        $0",
+      "    from source",
+      "",
+      ")",
+      "",
+      "select * from renamed"
+    ],
+    "description": "Staging model skeleton (source -> renamed)"
+  },
+
+  // ---------- YAML ----------
+  "dbt model yml": {
+    "scope": "yaml,jinja-yaml",
+    "prefix": "__model",
+    "body": [
+      "- name: ${1:model_name}",
+      "  description: \"${2:One row per ...}\"",
+      "  columns:",
+      "    - name: ${3:id}",
+      "      description: \"${4:Primary key}\"",
+      "      data_tests:",
+      "        - unique",
+      "        - not_null",
+      "$0"
+    ],
+    "description": "Model entry with a tested primary key"
+  },
+  "dbt source yml": {
+    "scope": "yaml,jinja-yaml",
+    "prefix": "__source",
+    "body": [
+      "- name: ${1:source_name}",
+      "  schema: ${2:raw}",
+      "  tables:",
+      "    - name: ${3:table_name}",
+      "$0"
+    ],
+    "description": "Source entry"
+  },
+  "dbt column yml": {
+    "scope": "yaml,jinja-yaml",
+    "prefix": "__column",
+    "body": [
+      "- name: ${1:column_name}",
+      "  description: \"${2}\"",
+      "$0"
+    ],
+    "description": "Column entry"
+  }
+}
