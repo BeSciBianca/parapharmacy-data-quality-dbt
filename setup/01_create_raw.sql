@@ -43,3 +43,11 @@ CREATE OR REPLACE TABLE INVENTORY_SNAPSHOTS (
   qty_sold       VARCHAR,
   qty_remaining  VARCHAR
 );
+
+
+-- After uploading data/raw/inventory_snapshots.csv to @RAW_FILES via Snowsight:
+
+COPY INTO PARAPHARMACY_DQ.RAW.INVENTORY_SNAPSHOTS
+  FROM @PARAPHARMACY_DQ.RAW.RAW_FILES
+  FILES = ('inventory_snapshots.csv')
+  FILE_FORMAT = (FORMAT_NAME = 'PARAPHARMACY_DQ.RAW.CSV_WITH_HEADER');
