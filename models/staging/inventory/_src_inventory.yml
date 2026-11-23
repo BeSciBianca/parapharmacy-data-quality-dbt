@@ -1,0 +1,7 @@
+sources:
+  - name: inventory
+    database: PARAPHARMACY_DQ
+    schema: RAW
+    tables:
+      - name: inventory_snapshots
+  
