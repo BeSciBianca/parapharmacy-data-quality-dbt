@@ -1,5 +1,6 @@
 sources:
-  - name: raw
+  - name: inventory
+    schema: RAW
     tables:
       - name: inventory_snapshots
         description: Intended grain one row per stock lot per snapshot date.
