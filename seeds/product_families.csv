@@ -1,0 +1,9 @@
+family_cd,family_name,default_storage_zone,expected_date_type
+SUPP,Food supplements,A,BBE
+SKIN,Skincare & dermocosmetics,A,BBE
+BABY,Baby food & formula,A,BBE
+COLD,Refrigerated probiotics & meals,C,EXP
+OTCM,Over-the-counter medicines,A,EXP
+HYGN,Hygiene & oral care,A,BBE
+SPRT,Sports nutrition & health snacks,A,BBE
+DEVC,First aid & medical devices,A,EXP
