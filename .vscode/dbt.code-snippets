@@ -192,5 +192,18 @@
       "$0"
     ],
     "description": "Column entry"
+  },
+  "dbt test severity": {
+    "scope": "yaml,jinja-yaml",
+    "prefix": "__severity",
+    "body": [
+      "- ${1:not_null}:",
+      "    config:",
+      "      severity: ${2|error,warn|}",
+      "      error_if: \"${3:>10}\"",
+      "      warn_if: \"${4:>0}\"",
+      "$0"
+    ],
+    "description": "Data test with severity and warn/error thresholds"
   }
 }
