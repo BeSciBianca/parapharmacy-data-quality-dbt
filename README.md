@@ -49,6 +49,8 @@ Some tests **warn on purpose**. They measure problems in the raw export rather t
 ## Findings
  
 *TODO: profiling results (before cleaning) and rule results.*
+
+Grain test initially failed: 112 exact duplicate rows (about 0.3%): 109 different lots across 112 lot-days, spread over outlets and all 30 days, with no concentration. Not a re-sent export; consistent with random row-level duplication in the export process. Removed in staging.
  
 ## Recommendations
  
