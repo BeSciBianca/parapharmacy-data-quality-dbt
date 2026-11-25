@@ -1,0 +1,151 @@
+sources:
+  - name: inventory
+    schema: RAW
+    tables:
+      - name: inventory_snapshots
+        description: Intended grain one row per stock lot per snapshot date.
+        columns:
+          - name: snapshot_dt
+            data_type: varchar
+            description: date of the daily snapshot
+            data_tests:
+              - not_null:
+                  config:
+                    severity: warn
+          - name: branch_hash
+            data_type: varchar
+            description: Anonymised outlet ID (hashed text). Joins to `branches.csv`
+            data_tests:
+              - not_null:
+                  config:
+                    severity: warn
+          - name: lot_id
+            data_type: varchar
+            description: Stock lot - one delivery of one product to one outlet. Appears every day until sold out or removed.
+            data_tests:
+              - not_null:
+                  config:
+                    severity: warn
+          - name: product_id
+            data_type: varchar
+            description: product ID.
+            data_tests:
+              - not_null:
+                  config:
+                    severity: warn
+          - name: product_name
+            data_type: varchar
+            description: Product name as shown on the shelf label
+            data_tests:
+              - not_null:
+                  config:
+                    severity: warn
+          - name: family_cd
+            data_type: varchar
+            description: Product family code. Joins to `product_families.csv`
+            data_tests:
+              - not_null:
+                  config:
+                    severity: warn
+          - name: storage_zone
+            data_type: varchar
+            description: values `A` = ambient shelf, `C` = cold chain (fridge), `Q` = quarantine (damaged or recalled, not on sale)
+            data_tests:
+              - not_null:
+                  config:
+                    severity: warn
+              - accepted_values:
+                  arguments:
+                    values: ['A', 'C', 'Q']
+                  config:
+                    severity: warn
+          - name: date_type
+            data_type: varchar
+            description: values `EXP` = hard expiry date (must not be sold after it), `BBE` = best before (quality may decline after it)
+            data_tests:
+              - not_null:
+                  config:
+                    severity: warn
+              - accepted_values:
+                  arguments:
+                    values: ['EXP', 'BBE']
+                  config:
+                    severity: warn
+          - name: expiry_dt
+            data_type: varchar
+            description: The date printed on the product (ISO text)
+            data_tests:
+              - not_null:
+                  config:
+                    severity: warn
+          - name: prc_list
+            data_type: varchar
+            description: Normal shelf price in EUR, before discount
+            data_tests:
+              - not_null:
+                  config:
+                    severity: warn
+          - name: disc_rate
+            data_type: varchar
+            description: Near-expiry discount as a fraction (`0.30` = 30% off)
+          - name: prc_sale
+            data_type: varchar
+            description: Price the customer pays, after discount
+            data_tests:
+              - not_null:
+                  config:
+                    severity: warn
+          - name: pack_size
+            data_type: varchar
+            description: Quantity in the pack, in `pack_unit`
+            data_tests:
+              - not_null:
+                  config:
+                    severity: warn
+          - name: pack_unit
+            data_type: varchar
+            description: values `g`, `ml` or `unit` (pieces, tablets, sachets)
+            data_tests:
+              - not_null:
+                  config:
+                    severity: warn
+              - accepted_values:
+                  arguments:
+                    values: ['g', 'ml', 'unit']
+                  config:
+                    severity: warn
+          - name: ppu_100
+            data_type: varchar
+            description: Price per 100 g or 100 ml, shown on the label. `0` for products sold by unit
+            data_tests:
+              - not_null:
+                  config:
+                    severity: warn
+          - name: qty_recv
+            data_type: varchar
+            description: Units received in the lot's delivery
+            data_tests:
+              - not_null:
+                  config:
+                    severity: warn
+          - name: qty_listed
+            data_type: varchar
+            description: Units put on sale (received minus anything not sellable)
+            data_tests:
+              - not_null:
+                  config:
+                    severity: warn
+          - name: qty_sold
+            data_type: varchar
+            description: Units sold **since the lot went on sale** (cumulative)
+            data_tests:
+              - not_null:
+                  config:
+                    severity: warn
+          - name: qty_remaining
+            data_type: varchar
+            description: Units still on sale at the snapshot
+            data_tests:
+              - not_null:
+                  config:
+                    severity: warn
