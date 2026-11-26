@@ -41,7 +41,8 @@ models:
           or `ml`), `price_per_100` must equal `price_sale / pack_size × 100`.
           Lots with a `pack_size` of 0, or a NULL price, are not evaluated:
           the comparison returns NULL, so they are not flagged. 
-        - 'negative_price'
+        - 'negative_price': price_before_discount, price_sale or price_per_100 
+          cannot be negative. If any of them is negative, the entry is flagged.
     columns: 
       - name: snapshot_date
         data_type: date

@@ -36,7 +36,7 @@ ppu_mismatch as (
     where pack_unit in('ml', 'g') and 
         price_per_100 not between round(price_sale / nullif(pack_size,0) * 100, 2) - 0.01 and 
             round(price_sale / nullif(pack_size,0) * 100, 2) + 0.01
-)
+),
 
 /*
 -- there seems to be a big mistake in how the price per 100 units is measured, with this value often being 10 times what it is supposed to be 
@@ -48,8 +48,26 @@ from {{ ref('stg_inventory__inventory_snapshots') }}) as total_rows
 */
 
 
+/* negative_price	
+    prc_list, prc_sale or ppu_100 is negative	
+    All rows
+*/
+negative_price as (
+    select 
+        snapshot_date, 
+        lot_id, 
+        'negative_price' as flag
+    from {{ ref('stg_inventory__inventory_snapshots') }}
+    where price_before_discount < 0 
+        or price_sale < 0 
+        or price_per_100 < 0
+)
+
+
 select snapshot_date, lot_id, flag 
 from discount_mismatch
     union all select snapshot_date, lot_id, flag
         from ppu_mismatch
+    union all select snapshot_date, lot_id, flag 
+        from negative_price 
 
