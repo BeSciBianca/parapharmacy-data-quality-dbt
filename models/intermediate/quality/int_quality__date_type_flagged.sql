@@ -44,6 +44,10 @@ missing_date_type_flag as (
     where storage_zone <> 'Q' and date_type is null 
 )
 
-select * from cold_chain_flag 
-    union all select * from ambient_flag 
-    union all select * from missing_date_type_flag
+select 
+    snapshot_date, lot_id, flag
+from cold_chain_flag 
+    union all select snapshot_date, lot_id, flag
+        from ambient_flag 
+    union all select snapshot_date, lot_id, flag
+        from missing_date_type_flag

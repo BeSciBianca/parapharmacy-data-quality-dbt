@@ -19,16 +19,6 @@ models:
       - name: lot_id
         data_type: varchar
         description: Flagged stock lot. Joins to `stg_inventory__inventory_snapshots` on `lot_id` and `snapshot_date`.
-      - name: actual_date_type
-        data_type: varchar
-        description: >
-          Date type recorded on the lot (`EXP` or `BBE`). Always NULL for
-          `missing_date_type_flag` rows.
-      - name: expected_date_type
-        data_type: varchar
-        description: >
-          Date type the lot should carry. Always `EXP` for cold-chain lots;
-          for ambient lots, the family's `expected_date_type` from `product_families`.
       - name: flag
         data_type: varchar
         description: Name of the rule the lot broke. See the model description for the rule definitions.
@@ -37,3 +27,33 @@ models:
           - accepted_values:
               arguments:
                 values: ['cold_chain_flag', 'ambient_flag', 'missing_date_type_flag']
+  - name: int_quality__price_flagged
+    description: >
+        Business-rule checks on the prices recorded on each stock lot.
+        Grain is one row per stock lot per snapshot date per flag raised; lots
+        that pass every rule do not appear. Prices are compared after rounding to
+        2 decimals, with a tolerance of ±0.01 EUR to absorb rounding differences.
+
+        Rules:
+        - `discount_mismatch`: for discounted lots (`discount_rate > 0`), the
+          sale price must equal `price_before_discount × (1 − discount_rate)`.
+        - `ppu_mismatch`: for lots sold by weight or volume (`pack_unit` is `g`
+          or `ml`), `price_per_100` must equal `price_sale / pack_size × 100`.
+          Lots with a `pack_size` of 0, or a NULL price, are not evaluated:
+          the comparison returns NULL, so they are not flagged. 
+        - 'negative_price'
+    columns: 
+      - name: snapshot_date
+        data_type: date
+        description: Date of the daily snapshot in which the lot was flagged.
+      - name: lot_id
+        data_type: varchar
+        description: Flagged stock lot. Joins to `stg_inventory__inventory_snapshots` on `lot_id` and `snapshot_date`.
+      - name: flag
+        data_type: varchar
+        description: Name of the rule the lot broke. See the model description for the rule definitions.
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: ['ppu_mismatch', 'discount_mismatch', 'negative_price']
