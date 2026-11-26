@@ -1,0 +1,39 @@
+models:
+  - name: int_quality__date_type_flagged
+    description: >
+      Business-rule check on the date type printed on each stock lot.
+      Grain is one row per stock lot per snapshot date per flag raised; lots
+      that pass every rule do not appear. Quarantine (`Q`) lots are out of scope.
+
+      Rules:
+        - `cold_chain_flag`: a cold-chain (`C`) lot must carry a hard expiry
+          (`EXP`) with an expiry date. Flagged when the date type is not `EXP`,
+          or is `EXP` but `expiry_date` is missing.
+        - `ambient_flag`: an ambient (`A`) lot must carry the
+          `expected_date_type` of its product family (from `product_families`).
+        - `missing_date_type_flag`: any in-scope lot (`A` or `C`) with no date type.
+    columns:
+      - name: snapshot_date
+        data_type: date
+        description: Date of the daily snapshot in which the lot was flagged.
+      - name: lot_id
+        data_type: varchar
+        description: Flagged stock lot. Joins to `stg_inventory__inventory_snapshots` on `lot_id` and `snapshot_date`.
+      - name: actual_date_type
+        data_type: varchar
+        description: >
+          Date type recorded on the lot (`EXP` or `BBE`). Always NULL for
+          `missing_date_type_flag` rows.
+      - name: expected_date_type
+        data_type: varchar
+        description: >
+          Date type the lot should carry. Always `EXP` for cold-chain lots;
+          for ambient lots, the family's `expected_date_type` from `product_families`.
+      - name: flag
+        data_type: varchar
+        description: Name of the rule the lot broke. See the model description for the rule definitions.
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: ['cold_chain_flag', 'ambient_flag', 'missing_date_type_flag']
