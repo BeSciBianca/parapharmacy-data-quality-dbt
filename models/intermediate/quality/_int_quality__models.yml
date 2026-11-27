@@ -61,8 +61,21 @@ models:
 
   - name: int_quality__quantity_flagged
     description: >
-        TO DO 
-    columns: 
+        Business-rule checks on the unit quantities recorded on each stock lot.
+        Grain is one row per stock lot per snapshot date per flag raised; lots
+        that pass every rule do not appear. All lots are in scope. Lots with a
+        NULL in any of the compared quantities are not evaluated: the comparison
+        returns NULL, so they are not flagged.
+
+        Rules:
+        - `listed_exceeds_received`: a lot cannot list more units for sale than
+          it received. Flagged when `units_on_sale > units_received`.
+        - `remaining_mismatch`: the units left must equal the units listed minus
+          the units sold. Flagged when
+          `units_remaining ≠ units_on_sale − units_sold`.
+        - 'negative_quantity' : units cannot be negative. Flagged when any one of 
+          units_received, units_on_sale, units_sold or units_remaining is negative.
+    columns:
       - name: snapshot_date
         data_type: date
         description: Date of the daily snapshot in which the lot was flagged.
