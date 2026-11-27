@@ -58,3 +58,22 @@ models:
           - accepted_values:
               arguments:
                 values: ['ppu_mismatch', 'discount_mismatch', 'negative_price']
+
+  - name: int_quality__quantity_flagged
+    description: >
+        TO DO 
+    columns: 
+      - name: - name: snapshot_date
+        data_type: date
+        description: Date of the daily snapshot in which the lot was flagged.
+      - name: lot_id
+        data_type: varchar
+        description: Flagged stock lot. Joins to `stg_inventory__inventory_snapshots` on `lot_id` and `snapshot_date`.
+      - name: flag
+        data_type: varchar
+        description: Name of the rule the lot broke. See the model description for the rule definitions.
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: ['listed_exceeds_received', 'remaining_mismatch', 'negative_quantity']
