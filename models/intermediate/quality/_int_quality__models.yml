@@ -63,7 +63,7 @@ models:
     description: >
         TO DO 
     columns: 
-      - name: - name: snapshot_date
+      - name: snapshot_date
         data_type: date
         description: Date of the daily snapshot in which the lot was flagged.
       - name: lot_id
