@@ -1,0 +1,92 @@
+models:
+  - name: int_quality__date_type_flagged
+    description: >
+      Business-rule check on the date type printed on each stock lot.
+      Grain is one row per stock lot per snapshot date per flag raised; lots
+      that pass every rule do not appear. Quarantine (`Q`) lots are out of scope.
+
+      Rules:
+        - `cold_chain_flag`: a cold-chain (`C`) lot must carry a hard expiry
+          (`EXP`) with an expiry date. Flagged when the date type is not `EXP`,
+          or is `EXP` but `expiry_date` is missing.
+        - `ambient_flag`: an ambient (`A`) lot must carry the
+          `expected_date_type` of its product family (from `product_families`).
+        - `missing_date_type_flag`: any in-scope lot (`A` or `C`) with no date type.
+    columns:
+      - name: snapshot_date
+        data_type: date
+        description: Date of the daily snapshot in which the lot was flagged.
+      - name: lot_id
+        data_type: varchar
+        description: Flagged stock lot. Joins to `stg_inventory__inventory_snapshots` on `lot_id` and `snapshot_date`.
+      - name: flag
+        data_type: varchar
+        description: Name of the rule the lot broke. See the model description for the rule definitions.
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: ['cold_chain_flag', 'ambient_flag', 'missing_date_type_flag']
+  - name: int_quality__price_flagged
+    description: >
+        Business-rule checks on the prices recorded on each stock lot.
+        Grain is one row per stock lot per snapshot date per flag raised; lots
+        that pass every rule do not appear. Prices are compared after rounding to
+        2 decimals, with a tolerance of ±0.01 EUR to absorb rounding differences.
+
+        Rules:
+        - `discount_mismatch`: for discounted lots (`discount_rate > 0`), the
+          sale price must equal `price_before_discount × (1 − discount_rate)`.
+        - `ppu_mismatch`: for lots sold by weight or volume (`pack_unit` is `g`
+          or `ml`), `price_per_100` must equal `price_sale / pack_size × 100`.
+          Lots with a `pack_size` of 0, or a NULL price, are not evaluated:
+          the comparison returns NULL, so they are not flagged. 
+        - 'negative_price': price_before_discount, price_sale or price_per_100 
+          cannot be negative. If any of them is negative, the entry is flagged.
+    columns: 
+      - name: snapshot_date
+        data_type: date
+        description: Date of the daily snapshot in which the lot was flagged.
+      - name: lot_id
+        data_type: varchar
+        description: Flagged stock lot. Joins to `stg_inventory__inventory_snapshots` on `lot_id` and `snapshot_date`.
+      - name: flag
+        data_type: varchar
+        description: Name of the rule the lot broke. See the model description for the rule definitions.
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: ['ppu_mismatch', 'discount_mismatch', 'negative_price']
+
+  - name: int_quality__quantity_flagged
+    description: >
+        Business-rule checks on the unit quantities recorded on each stock lot.
+        Grain is one row per stock lot per snapshot date per flag raised; lots
+        that pass every rule do not appear. All lots are in scope. Lots with a
+        NULL in any of the compared quantities are not evaluated: the comparison
+        returns NULL, so they are not flagged.
+
+        Rules:
+        - `listed_exceeds_received`: a lot cannot list more units for sale than
+          it received. Flagged when `units_on_sale > units_received`.
+        - `remaining_mismatch`: the units left must equal the units listed minus
+          the units sold. Flagged when
+          `units_remaining ≠ units_on_sale − units_sold`.
+        - 'negative_quantity' : units cannot be negative. Flagged when any one of 
+          units_received, units_on_sale, units_sold or units_remaining is negative.
+    columns:
+      - name: snapshot_date
+        data_type: date
+        description: Date of the daily snapshot in which the lot was flagged.
+      - name: lot_id
+        data_type: varchar
+        description: Flagged stock lot. Joins to `stg_inventory__inventory_snapshots` on `lot_id` and `snapshot_date`.
+      - name: flag
+        data_type: varchar
+        description: Name of the rule the lot broke. See the model description for the rule definitions.
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: ['listed_exceeds_received', 'remaining_mismatch', 'negative_quantity']
