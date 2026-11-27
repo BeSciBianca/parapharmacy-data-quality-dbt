@@ -58,3 +58,35 @@ models:
           - accepted_values:
               arguments:
                 values: ['ppu_mismatch', 'discount_mismatch', 'negative_price']
+
+  - name: int_quality__quantity_flagged
+    description: >
+        Business-rule checks on the unit quantities recorded on each stock lot.
+        Grain is one row per stock lot per snapshot date per flag raised; lots
+        that pass every rule do not appear. All lots are in scope. Lots with a
+        NULL in any of the compared quantities are not evaluated: the comparison
+        returns NULL, so they are not flagged.
+
+        Rules:
+        - `listed_exceeds_received`: a lot cannot list more units for sale than
+          it received. Flagged when `units_on_sale > units_received`.
+        - `remaining_mismatch`: the units left must equal the units listed minus
+          the units sold. Flagged when
+          `units_remaining ≠ units_on_sale − units_sold`.
+        - 'negative_quantity' : units cannot be negative. Flagged when any one of 
+          units_received, units_on_sale, units_sold or units_remaining is negative.
+    columns:
+      - name: snapshot_date
+        data_type: date
+        description: Date of the daily snapshot in which the lot was flagged.
+      - name: lot_id
+        data_type: varchar
+        description: Flagged stock lot. Joins to `stg_inventory__inventory_snapshots` on `lot_id` and `snapshot_date`.
+      - name: flag
+        data_type: varchar
+        description: Name of the rule the lot broke. See the model description for the rule definitions.
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: ['listed_exceeds_received', 'remaining_mismatch', 'negative_quantity']
