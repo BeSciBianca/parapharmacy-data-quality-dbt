@@ -23,9 +23,9 @@ A dbt project that checks whether a retail chain's daily stock export can be tru
 |---|---|---|
 | Source | Raw daily snapshots, all text columns, loaded as is | `inventory.inventory_snapshots` |
 | Seeds | Reference tables | `branches`, `product_families` |
-| Staging | Cast types, normalise codes and units, remove exact duplicates | `stg_inventory__inventory_snapshots` |
-| Rules | One model per group of data-quality rules | *TODO* |
-| Marts | Flags per lot, report per rule and day, unusable stock per outlet | *TODO* |
+| Staging | Remove exact duplicates, then cast types and normalise codes and units | `stg_inventory__inventory_snapshots` |
+| Rules | One model per group of data-quality rules, each returning the rows that fail | int_quality__date_type_flagged, int_quality__price_flagged, int_quality__quantity_flagged |
+| Marts | All flags in one table; report per rule and day; unusable stock per outlet | `fct_quality_flags`; *planned:* `mart_quality_report`, `mart_unexploitable_by_branch` |
  
 ## Data
  
@@ -33,24 +33,52 @@ A dbt project that checks whether a retail chain's daily stock export can be tru
 - `seeds/branches.csv`, `seeds/product_families.csv`: reference tables.
 - `scripts/generate_data.py`: regenerates the data. It uses a fixed random seed, so it always produces the same files.
 - `docs/data_dictionary.md`: column descriptions.
-## Data-quality checks
+## Data-quality rules
  
-Some tests **warn on purpose**. They measure problems in the raw export rather than stop the build. The staging versions of the same checks fail the build if the cleaning doesn't work.
+The rules are **models, not tests**. Each rule group returns the rows that break a rule, with one column naming the rule. A violation is a finding to report, not a reason to stop the build. `fct_quality_flags` combines all groups into one table.
  
+| Group | Rule | What it flags |
+|---|---|---|
+| Date type | `date_type_mismatch` | Cold-chain lots that don't have an expiry date type (`EXP`) and a known expiry date; ambient lots whose date type differs from their product family's expected type. Quarantined lots are excluded. |
+| Date type | missing date type | Lots with no date type (kept as missing in staging rather than filled from the reference table, because a missing expiry date on a cold-chain product is a food-safety question). |
+| Price | `discount_mismatch` | Sale price doesn't match list price minus the discount (tolerance ±0.01, only lots with a discount). |
+| Price | `ppu_mismatch` | Price per 100 g/ml doesn't match the sale price and pack size. |
+| Price | `negative_price` | Negative prices. |
+| Quantity | `listed_exceeds_received` | More units listed for sale than were received. |
+| Quantity | `remaining_mismatch` | Remaining quantity doesn't add up. units_remaining ≠ units_on_sale − units_sold |
+| Quantity | `negative_quantity` | Negative quantities. |
+ 
+Rules only evaluate rows with complete input data. Missing values are reported by the `not_null` tests instead (see below).
+ 
+## Data-quality checks (tests)
+
+Some tests **warn on purpose**. They measure problems in the raw export rather than stop the build. Tests on cleaned values fail the build if the cleaning doesn't work.
+
 | Check | Where | Severity | Why |
 |---|---|---|---|
 | One row per lot per day | staging | warn | Measures duplicates in the export |
 | `pack_unit` has an accepted value | source | warn | Measures spelling variants in the raw data |
-| `pack_unit` has an accepted value | staging | error | Proves the normalisation worked |
 | `pack_unit`, `date_type` not null | source | warn | Measures missing values in the export |
- 
-*TODO: add the rule tests and unit tests.*
+| `storage_zone`, `date_type`, `pack_unit` have an accepted value | staging | error | Proves the code normalisation worked |
+| `family_code` exists in `product_families` | staging | error | Every lot links to a product family, which the date-type rule needs |
+| Not null on every column except `discount_rate` | staging | warn | Reports missing values. The rules skip rows with a missing input, so these tests are where missing values show up |
+| `flag` not null and an accepted value | each rule model (date type, price, quantity) | error | Every flagged row names a known rule of its group, so the flags can be counted per rule |
+
+The rule models are tested on their output only: a lot that breaks a rule is a finding, not a test failure.
  
 ## Findings
  
-*TODO: profiling results (before cleaning) and rule results.*
-
-Grain test initially failed: 112 exact duplicate rows (about 0.3%): 109 different lots across 112 lot-days, spread over outlets and all 30 days, with no concentration. Not a re-sent export; consistent with random row-level duplication in the export process. Removed in staging.
+### Profiling (raw export, before cleaning)
+ 
+The raw export has 36,522 rows; 36,410 remain after removing duplicates.
+ 
+- **Duplicates:** 112 exact duplicate rows (about 0.3%): 109 different lots across 112 lot-days, spread over outlets and all 30 days, with no concentration. Not a re-sent export; consistent with random row-level duplication in the export process. Removed in staging.
+- **Pack unit spellings:** variants such as `gr`, `pc` and `pcs` alongside `g` and `unit`. Normalised in staging.
+- **Missing pack unit:** 90 rows (about 0.25%). All of them have a price per 100 of 0, which the data dictionary defines as "sold by unit", so they are filled with `unit` in staging.
+- **Missing date type:** 286 rows (about 0.8%), with no visible pattern. Kept as missing and flagged by the date-type rules.
+### Rule results
+ 
+*TODO: flagged rows per rule, and the patterns behind them.*
  
 ## Recommendations
  
@@ -88,13 +116,15 @@ dbt build
 *TODO: update at the end.*
  
 ```
-data/raw/      raw CSV export
-docs/          data dictionary
-models/        dbt models (staging/, later rules and marts)
-scripts/       data generator
-seeds/         reference tables
-setup/         Snowflake setup SQL
-tests/         singular tests
+data/raw/                     raw CSV export
+docs/                         data dictionary
+models/staging/               cleaning of the raw export
+models/intermediate/quality/  data-quality rule models
+models/marts/                 fct_quality_flags and reporting marts
+scripts/                      data generator
+seeds/                        reference tables
+setup/                        Snowflake setup SQL
+tests/                        singular tests
 ```
  
 ## Next steps (version 2)
@@ -103,4 +133,3 @@ tests/         singular tests
 - DuckDB target, so the project runs without Snowflake
 - Incremental model on snapshot date
  
-
